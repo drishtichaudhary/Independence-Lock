@@ -55,7 +55,6 @@ A self-custodial Ethereum vault with timelock protection. Store ETH securely and
 ### 3. Check Balance
 - Click "Get Contract Balance"
 - View current ETH stored in contract
-```
 
 ## 🛡️ Security Features
 
