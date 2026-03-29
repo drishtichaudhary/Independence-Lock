@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -394,6 +393,9 @@
             </div>
             <button id="withdrawBtn">Withdraw All ETH</button>
             <div id="withdrawStatus"></div>
+            <div id="timelockMessage" style="color: #ef4444; font-size: 14px; margin-top: 10px; display: none;">
+                Funds are locked due to timelock
+            </div>
         </div>
 
         <!-- Time Remaining Section -->
@@ -634,8 +636,11 @@
                 // Enable buttons
                 getBalanceBtn.disabled = false;
                 depositBtn.disabled = false;
-                withdrawBtn.disabled = false;
+                // Withdraw button state will be determined by getTimeRemaining()
                 getTimeBtn.disabled = false;
+                
+                // Check timelock status on connection
+                getTimeRemaining();
             } else {
                 // Disable buttons
                 getBalanceBtn.disabled = true;
@@ -657,7 +662,7 @@
                 
             } catch (error) {
                 console.error('Error getting balance:', error);
-                showStatus('Failed to get balance: ' + error.message, 'error');
+                showStatus(getFriendlyErrorMessage(error), 'error');
             }
         }
 
@@ -671,15 +676,18 @@
             }
 
             try {
-                showStatus('Depositing ETH...', 'info');
+                // Step 1: User clicks - show pending
+                showStatus('⏳ Transaction pending...', 'info');
                 
                 const amountWei = ethers.utils.parseEther(amount);
                 const transaction = await contract.deposit({ value: amountWei });
                 
-                showStatus('Transaction sent. Waiting for confirmation...', 'info');
+                // Step 2: Transaction sent - show waiting
+                showStatus('⛓ Waiting for blockchain confirmation...', 'info');
                 await transaction.wait();
                 
-                showStatus(`Successfully deposited ${amount} ETH!`, 'success');
+                // Step 3: Confirmed - show success
+                showStatus('✅ Transaction confirmed! Successfully deposited ' + amount + ' ETH', 'success');
                 document.getElementById('depositAmount').value = '';
                 
                 // Update balance
@@ -687,28 +695,31 @@
                 
             } catch (error) {
                 console.error('Error depositing:', error);
-                showStatus('Deposit failed: ' + error.message, 'error');
+                showStatus(getFriendlyErrorMessage(error), 'error');
             }
         }
 
         // Withdraw ETH
         async function withdrawETH() {
             try {
-                showStatus('Attempting to withdraw...', 'info');
+                // Step 1: User clicks - show pending
+                showStatus('⏳ Transaction pending...', 'info');
                 
                 const transaction = await contract.withdraw();
                 
-                showStatus('Transaction sent. Waiting for confirmation...', 'info');
+                // Step 2: Transaction sent - show waiting
+                showStatus('⛓ Waiting for blockchain confirmation...', 'info');
                 await transaction.wait();
                 
-                showStatus('Withdrawal successful!', 'success');
+                // Step 3: Confirmed - show success
+                showStatus('✅ Transaction confirmed! Withdrawal successful', 'success');
                 
                 // Update balance
                 await getContractBalance();
                 
             } catch (error) {
                 console.error('Error withdrawing:', error);
-                showStatus('Withdrawal failed: ' + error.message, 'error');
+                showStatus(getFriendlyErrorMessage(error), 'error');
             }
         }
 
@@ -722,6 +733,10 @@
                 
                 if (timeInSeconds === 0) {
                     document.getElementById('timeRemaining').textContent = '✅ Timelock expired - Withdrawal allowed!';
+                    // Enable withdraw button
+                    document.getElementById('withdrawBtn').disabled = false;
+                    // Hide timelock message
+                    document.getElementById('timelockMessage').style.display = 'none';
                 } else {
                     const days = Math.floor(timeInSeconds / 86400);
                     const hours = Math.floor((timeInSeconds % 86400) / 3600);
@@ -729,13 +744,17 @@
                     
                     document.getElementById('timeRemaining').textContent = 
                         `⏰ Time remaining: ${days}d ${hours}h ${minutes}m`;
+                    // Disable withdraw button if timelock not expired
+                    document.getElementById('withdrawBtn').disabled = true;
+                    // Show timelock message
+                    document.getElementById('timelockMessage').style.display = 'block';
                 }
                 
                 showStatus('Timelock status retrieved!', 'success');
                 
             } catch (error) {
                 console.error('Error getting time remaining:', error);
-                showStatus('Failed to get time remaining: ' + error.message, 'error');
+                showStatus(getFriendlyErrorMessage(error), 'error');
             }
         }
 
@@ -745,11 +764,31 @@
             statusDiv.textContent = message;
             statusDiv.className = 'status ' + type;
             
-            // Clear message after 15 seconds (increased from 5)
+            // Clear message after 5 seconds for normal messages, 8 seconds for transactions
+            const delay = message.includes('⏳') || message.includes('⛓') || message.includes('✅') ? 8000 : 5000;
             setTimeout(() => {
                 statusDiv.textContent = '';
                 statusDiv.className = '';
-            }, 15000);
+            }, delay);
+        }
+
+        // Show user-friendly error messages
+        function getFriendlyErrorMessage(error) {
+            const message = error.message || error.toString();
+            
+            if (message.includes('timelock') || message.includes('lockTime')) {
+                return 'Funds are locked due to timelock';
+            }
+            if (message.includes('insufficient funds')) {
+                return 'Insufficient funds for transaction';
+            }
+            if (message.includes('user rejected')) {
+                return 'Transaction cancelled by user';
+            }
+            if (message.includes('network')) {
+                return 'Network error. Please try again';
+            }
+            return 'Transaction failed. Please try again';
         }
 
         // Listen for account changes
