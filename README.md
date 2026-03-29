@@ -21,6 +21,9 @@ A self-custodial Ethereum vault with timelock protection. Store ETH securely and
 - Withdraw ETH (only contract owner, after 7-day timelock)
 - Check remaining timelock countdown
 - Full self-custody - no third-party risks
+- Real-time transaction status feedback
+- Improved UX with contextual error handling
+- Smart UI behavior based on contract state (timelock-aware UI)
 
 ## Tech Stack
 
@@ -55,6 +58,21 @@ A self-custodial Ethereum vault with timelock protection. Store ETH securely and
 ### 3. Check Balance
 - Click "Get Contract Balance"
 - View current ETH stored in contract
+
+### 4. Withdraw ETH (Owner Only)
+- Click "Withdraw All ETH"
+- Only works if you're contract owner
+- Only works after 7-day timelock expires
+- Confirm transaction in MetaMask
+- UI shows "Funds are locked due to timelock" if not expired
+
+### 5. Check Timelock
+- Click "Check Time Remaining"
+- See days/hours/minutes until withdrawal allowed
+- Withdraw button automatically enabled/disabled based on timelock status
+
+## Complete User Flow
+Connect wallet → deposit → see transaction status → check balance → attempt withdraw (blocked if locked) → view timelock
 
 ## 🛡️ Security Features
 
@@ -145,12 +163,37 @@ contract IndependenceLock {
 }
 ```
 
-## 🎓 Key Takeaways
+## 🎓 Educational Value
+
+Perfect for college projects because it demonstrates:
 - **Smart Contract Basics**: State, functions, events
 - **Security Principles**: Access control, validation
 - **Real-world Use Case**: Digital vault application
 - **Gas Optimization**: Efficient code structure
 - **Best Practices**: Clean, commented code
+
+## Recent Improvements (Day 5)
+
+### Enhanced Transaction Feedback
+- **Step-by-step status**: Pending → Confirming → Confirmed
+- **Visual indicators**: Clear emoji-based status messages (⏳→⛓→✅)
+- **Persistent messaging**: Extended display time for better readability
+
+### Improved Error Handling
+- **User-friendly messages**: Replaced raw errors with understandable text
+- **Contextual errors**: "Funds are locked due to timelock" instead of CALL_EXCEPTION
+- **Smart error mapping**: Network, insufficient funds, user cancellation handling
+
+### Smart UI Behavior
+- **Timelock-aware interface**: Withdraw button auto-disabled when locked
+- **Section-specific messaging**: Clear status under withdraw section
+- **Automatic state updates**: UI responds to contract state changes
+
+### Complete User Flow
+Connect wallet → deposit → see transaction status → check balance → attempt withdraw (blocked if locked) → view timelock
+
+## Live Demo
+**Live Demo**: https://drishtichaudhary.github.io/Independence-Lock/
 
 ---
 
