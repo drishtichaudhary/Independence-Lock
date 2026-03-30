@@ -366,7 +366,8 @@
             </div>
             <div id="walletInfo" class="wallet-info" style="display: none;">
                 <strong>Connected Account:</strong> <span id="accountAddress"></span><br>
-                <strong>Network:</strong> <span id="networkName"></span>
+                <strong>Network:</strong> <span id="networkName"></span><br>
+                <strong>Wallet Balance:</strong> <span id="walletBalance">0.0000</span> ETH
             </div>
         </div>
 
@@ -605,6 +606,10 @@
                 
                 // Update UI
                 updateWalletUI(true, await signer.getAddress(), network.name);
+                
+                // Update wallet balance
+                await updateWalletBalance();
+                
                 showStatus('Wallet connected successfully!', 'success');
                 
             } catch (error) {
@@ -619,8 +624,23 @@
             signer = null;
             contract = null;
             userAddress = null;
+            
             updateWalletUI(false);
             showStatus('Wallet disconnected', 'info');
+        }
+
+        // Update wallet balance
+        async function updateWalletBalance() {
+            if (!signer) return;
+            
+            try {
+                const balance = await signer.getBalance();
+                const balanceInETH = ethers.utils.formatEther(balance);
+                document.getElementById('walletBalance').textContent = parseFloat(balanceInETH).toFixed(4);
+            } catch (error) {
+                console.error('Error getting wallet balance:', error);
+                document.getElementById('walletBalance').textContent = 'Error';
+            }
         }
 
         // Update wallet UI
@@ -642,6 +662,9 @@
                 // Check timelock status on connection
                 getTimeRemaining();
             } else {
+                // Reset wallet balance
+                document.getElementById('walletBalance').textContent = '0.0000';
+                
                 // Disable buttons
                 getBalanceBtn.disabled = true;
                 depositBtn.disabled = true;
@@ -690,8 +713,9 @@
                 showStatus('✅ Transaction confirmed! Successfully deposited ' + amount + ' ETH', 'success');
                 document.getElementById('depositAmount').value = '';
                 
-                // Update balance
+                // Update balances
                 await getContractBalance();
+                await updateWalletBalance();
                 
             } catch (error) {
                 console.error('Error depositing:', error);
@@ -714,8 +738,9 @@
                 // Step 3: Confirmed - show success
                 showStatus('✅ Transaction confirmed! Withdrawal successful', 'success');
                 
-                // Update balance
+                // Update balances
                 await getContractBalance();
+                await updateWalletBalance();
                 
             } catch (error) {
                 console.error('Error withdrawing:', error);
